@@ -11,6 +11,7 @@ from django.utils.text import slugify
 from quizzes.models import Category, Choice, Level, Question, Quiz
 
 from ._school_quizzes import SCHOOL_QUIZZES
+from ._university_quizzes import UNIVERSITY_QUIZZES
 
 LEVELS = [
     ("Elementary School", "Grades 1-6: building the basics."),
@@ -173,7 +174,7 @@ class Command(BaseCommand):
             )
             levels[name] = level
 
-        all_quizzes = QUIZZES + SCHOOL_QUIZZES
+        all_quizzes = QUIZZES + SCHOOL_QUIZZES + UNIVERSITY_QUIZZES
         for data in all_quizzes:
             category, _ = Category.objects.get_or_create(
                 slug=slugify(data["category"]), defaults={"name": data["category"]}

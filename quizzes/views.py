@@ -7,7 +7,7 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
-from . import services
+from . import ratelimit, services
 from .models import Attempt, Category, Level, Quiz
 
 
@@ -71,6 +71,9 @@ def quiz_detail(request, slug):
 @require_POST
 def start_quiz(request, slug):
     quiz = get_object_or_404(published_quizzes(), slug=slug)
+    if ratelimit.hit("quiz_start", request.user.pk):
+        messages.error(request, "You're starting quizzes too quickly. Please wait a minute and try again.")
+        return redirect(quiz)
     if not quiz.questions.exists():
         messages.error(request, "This quiz has no questions yet.")
         return redirect(quiz)
@@ -149,6 +152,16 @@ def signup(request):
     if request.user.is_authenticated:
         return redirect("home")
     form = UserCreationForm(request.POST or None)
+    if request.method == "POST" and ratelimit.hit("signup", ratelimit.client_ip(request)):
+        return render(
+            request,
+            "registration/signup.html",
+            {
+                "form": UserCreationForm(),
+                "limit_message": "Too many sign-up attempts from your network. Please try again later.",
+            },
+            status=429,
+        )
     if request.method == "POST" and form.is_valid():
         user = form.save()
         login(request, user)

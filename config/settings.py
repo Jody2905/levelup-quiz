@@ -137,3 +137,18 @@ MAILERS = {
         "BACKEND": "django.core.mail.backends.console.EmailBackend",
     },
 }
+
+# Rate limits: name -> (max attempts, window in seconds). See quizzes/ratelimit.py.
+RATE_LIMITS = {
+    "login_user": (5, 15 * 60),   # failed logins per username
+    "login_ip": (20, 15 * 60),    # failed logins per IP address
+    "signup": (5, 60 * 60),       # signup attempts per IP address
+    "quiz_start": (10, 60),       # quiz starts per user per minute
+}
+
+# Cookie hardening when running in production (DJANGO_DEBUG=0)
+if not DEBUG:
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_REFERRER_POLICY = "same-origin"

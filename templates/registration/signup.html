@@ -3,6 +3,7 @@
 {% block content %}
 <div class="panel narrow">
   <h1>Create an account</h1>
+  {% if limit_message %}<div class="flash flash-error">{{ limit_message }}</div>{% endif %}
   <form method="post">
     {% csrf_token %}
     {{ form.as_p }}

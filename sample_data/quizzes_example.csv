@@ -1,0 +1,5 @@
+quiz_title,level,category,time_limit_minutes,quiz_description,question,choice_1,choice_2,choice_3,choice_4,correct,explanation
+Healthy Habits,Elementary School,Health,5,Simple questions about staying healthy.,How many hours of sleep do most children need each night?,4 to 5,9 to 12,2 to 3,15 to 18,2,Most school-age children need 9 to 12 hours of sleep.
+Healthy Habits,Elementary School,Health,5,Simple questions about staying healthy.,Which is the healthiest drink?,Soda,Water,Energy drink,Sweet tea,2,Water keeps you hydrated without added sugar.
+Healthy Habits,Elementary School,Health,5,Simple questions about staying healthy.,How long should you wash your hands?,At least 20 seconds,2 seconds,5 minutes,You don't need to,1,Scrub for at least 20 seconds to remove germs.
+Healthy Habits,Elementary School,Health,5,Simple questions about staying healthy.,Fruits and vegetables are good for you.,True,False,,,1,They give your body vitamins and fibre.

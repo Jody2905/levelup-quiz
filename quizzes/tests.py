@@ -1,13 +1,23 @@
 from datetime import timedelta
+from io import StringIO
 
 from django.contrib.auth.models import User
 from django.core.management import call_command
-from django.test import TestCase
+from django.core.cache import cache
+from django.test import TestCase as DjangoTestCase
 from django.urls import reverse
 from django.utils import timezone
 
 from . import services
 from .models import Attempt, Category, Choice, Level, Question, Quiz
+
+
+class TestCase(DjangoTestCase):
+    """Clears the cache before every test so rate-limit counters don't leak between tests."""
+
+    def _callSetUp(self):  # runs before each test's setUp()
+        cache.clear()
+        super()._callSetUp()
 
 
 def make_quiz(level_name="High School", n_questions=3, minutes=5):
@@ -156,7 +166,7 @@ class ViewTests(TestCase):
 
 class LevelOrderTests(TestCase):
     def test_home_lists_levels_in_learning_order(self):
-        call_command("seed_quizzes", stdout=open("/dev/null", "w"))
+        call_command("seed_quizzes", stdout=StringIO())
         r = self.client.get(reverse("home"))
         names = [lvl.name for lvl in r.context["levels"]]
         self.assertEqual(names, ["Elementary School", "Middle School", "High School", "University", "Professional"])
@@ -164,8 +174,8 @@ class LevelOrderTests(TestCase):
 
 class SeedTests(TestCase):
     def test_seed_is_idempotent(self):
-        call_command("seed_quizzes", stdout=open("/dev/null", "w"))
-        call_command("seed_quizzes", stdout=open("/dev/null", "w"))
+        call_command("seed_quizzes", stdout=StringIO())
+        call_command("seed_quizzes", stdout=StringIO())
         self.assertEqual(Level.objects.count(), 5)
         self.assertGreaterEqual(Quiz.objects.filter(level__slug="elementary-school").count(), 7)
         self.assertGreaterEqual(Quiz.objects.filter(level__slug="middle-school").count(), 8)
@@ -269,3 +279,124 @@ class DashboardTests(TestCase):
         r = self.client.get(reverse("dashboard"))
         self.assertContains(r, "<polyline")
         self.assertContains(r, "Average by subject")
+
+
+class RateLimitTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user("jo", password="right-pass-123")
+        self.quiz = make_quiz()
+
+    def bad_login(self, username="jo"):
+        return self.client.post(reverse("login"), {"username": username, "password": "wrong"})
+
+    def test_lockout_after_five_failed_logins(self):
+        for _ in range(5):
+            self.assertEqual(self.bad_login().status_code, 200)
+        r = self.client.post(reverse("login"), {"username": "jo", "password": "right-pass-123"})
+        self.assertEqual(r.status_code, 429)
+        self.assertContains(r, "Too many failed login attempts", status_code=429)
+        self.assertNotIn("_auth_user_id", self.client.session)
+
+    def test_lockout_is_per_username(self):
+        User.objects.create_user("sam", password="sam-pass-123")
+        for _ in range(5):
+            self.bad_login("jo")
+        r = self.client.post(reverse("login"), {"username": "sam", "password": "sam-pass-123"})
+        self.assertEqual(r.status_code, 302)
+
+    def test_successful_login_resets_counter(self):
+        for _ in range(4):
+            self.bad_login()
+        self.client.post(reverse("login"), {"username": "jo", "password": "right-pass-123"})
+        self.client.logout()
+        for _ in range(4):
+            self.assertEqual(self.bad_login().status_code, 200)
+
+    def test_ip_limit_blocks_many_usernames(self):
+        for i in range(20):
+            self.bad_login(f"user{i}")
+        r = self.client.post(reverse("login"), {"username": "jo", "password": "right-pass-123"})
+        self.assertEqual(r.status_code, 429)
+
+    def test_signup_limit(self):
+        for i in range(5):
+            self.client.post(reverse("signup"), {"username": f"x{i}", "password1": "a", "password2": "b"})
+        r = self.client.post(reverse("signup"), {
+            "username": "late", "password1": "Str0ng-pass-123", "password2": "Str0ng-pass-123",
+        })
+        self.assertEqual(r.status_code, 429)
+        self.assertFalse(User.objects.filter(username="late").exists())
+
+    def test_quiz_start_limit(self):
+        self.client.login(username="jo", password="right-pass-123")
+        url = reverse("start_quiz", args=[self.quiz.slug])
+        for _ in range(10):
+            self.client.post(url)
+        r = self.client.post(url, follow=True)
+        self.assertContains(r, "starting quizzes too quickly")
+
+
+class ImportQuizzesTests(TestCase):
+    HEADER = "quiz_title,level,category,time_limit_minutes,quiz_description,question,choice_1,choice_2,choice_3,choice_4,correct,explanation\n"
+
+    def setUp(self):
+        Level.objects.create(name="High School", slug="high-school", order=3)
+
+    def write_csv(self, rows):
+        import tempfile
+        f = tempfile.NamedTemporaryFile("w", suffix=".csv", delete=False, encoding="utf-8")
+        f.write(self.HEADER + "".join(r + "\n" for r in rows))
+        f.close()
+        self.addCleanup(lambda: __import__("os").unlink(f.name))
+        return f.name
+
+    def run_import(self, path, *args):
+        from io import StringIO
+        out, err = StringIO(), StringIO()
+        call_command("import_quizzes", path, *args, stdout=out, stderr=err)
+        return out.getvalue(), err.getvalue()
+
+    def test_valid_import(self):
+        path = self.write_csv([
+            "Photosynthesis,High School,Biology,5,Plants,What gas do plants take in?,Oxygen,Carbon dioxide,Nitrogen,,2,CO2 is used.",
+            "Photosynthesis,high-school,Biology,5,Plants,Where does it happen?,Chloroplast,Nucleus,,,1,In chloroplasts.",
+        ])
+        self.run_import(path)
+        quiz = Quiz.objects.get(slug="photosynthesis")
+        self.assertEqual(quiz.questions.count(), 2)
+        self.assertEqual(quiz.category.name, "Biology")
+        q1 = quiz.questions.get(order=0)
+        self.assertEqual(q1.choices.count(), 3)
+        self.assertEqual(q1.correct_choice().text, "Carbon dioxide")
+
+    def test_dry_run_saves_nothing(self):
+        path = self.write_csv(["Q,High School,Math,5,,1+1?,2,3,,,1,"])
+        out, _ = self.run_import(path, "--dry-run")
+        self.assertIn("Dry run OK", out)
+        self.assertFalse(Quiz.objects.exists())
+
+    def test_bad_rows_import_nothing(self):
+        from django.core.management.base import CommandError
+        path = self.write_csv([
+            "Good,High School,Math,5,,1+1?,2,3,,,1,",
+            "Bad,Primary 9,Math,5,,2+2?,4,5,,,1,",        # unknown level
+            "Bad2,High School,Math,5,,3+3?,6,7,,,3,",     # correct out of range
+            "Bad3,High School,Math,5,,4+4?,8,,9,,1,",     # gap in choices
+        ])
+        with self.assertRaises(CommandError):
+            self.run_import(path)
+        self.assertFalse(Quiz.objects.exists())
+
+    def test_duplicate_needs_replace(self):
+        from django.core.management.base import CommandError
+        path = self.write_csv(["Dupe,High School,Math,5,,1+1?,2,3,,,1,"])
+        self.run_import(path)
+        with self.assertRaises(CommandError):
+            self.run_import(path)
+        self.run_import(path, "--replace")
+        self.assertEqual(Quiz.objects.filter(slug="dupe").count(), 1)
+
+    def test_sample_file_is_valid(self):
+        Level.objects.create(name="Elementary School", slug="elementary-school", order=1)
+        out, _ = self.run_import("sample_data/quizzes_example.csv", "--dry-run")
+        self.assertIn("Dry run OK", out)
