@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}{{ quiz.title }} · LevelUp Quiz{% endblock %}
+{% block content %}
+<div class="take-header">
+  <div>
+    <span class="pill">{{ quiz.level }}</span>
+    <h1>{{ quiz.title }}</h1>
+  </div>
+  <div class="timer" id="timer" data-seconds="{{ seconds_remaining }}">--:--</div>
+</div>
+
+<form method="post" id="quiz-form">
+  {% csrf_token %}
+  {% for question, choices in questions %}
+    <fieldset class="question">
+      <legend><span class="qnum">{{ forloop.counter }}.</span> {{ question.text }}</legend>
+      {% for choice in choices %}
+        <label class="choice">
+          <input type="radio" name="q{{ question.id }}" value="{{ choice.id }}">
+          <span>{{ choice.text }}</span>
+        </label>
+      {% endfor %}
+    </fieldset>
+  {% endfor %}
+  <button class="btn btn-wide">Submit answers</button>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Display-only countdown. The real time limit is enforced on the server.
+  (function () {
+    const el = document.getElementById("timer");
+    const form = document.getElementById("quiz-form");
+    let left = parseInt(el.dataset.seconds, 10);
+    let submitted = false;
+    form.addEventListener("submit", () => { submitted = true; });
+    function tick() {
+      const m = Math.floor(left / 60), s = left % 60;
+      el.textContent = m + ":" + String(s).padStart(2, "0");
+      el.classList.toggle("timer-low", left <= 60);
+      if (left <= 0) { if (!submitted) { submitted = true; form.submit(); } return; }
+      left -= 1;
+      setTimeout(tick, 1000);
+    }
+    tick();
+  })();
+</script>
+{% endblock %}

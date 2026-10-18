@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}My results · LevelUp Quiz{% endblock %}
+{% block content %}
+<h1>My results</h1>
+{% if attempts %}
+<table class="table">
+  <tr><th>Quiz</th><th>Level</th><th>Date</th><th>Score</th><th></th></tr>
+  {% for a in attempts %}
+    <tr>
+      <td>{{ a.quiz.title }}</td>
+      <td>{{ a.quiz.level }}</td>
+      <td>{{ a.submitted_at|date:"M j, Y g:i A" }}</td>
+      <td>{{ a.score }}/{{ a.total }} ({{ a.percent }}%)</td>
+      <td><a href="{{ a.get_absolute_url }}">Review</a></td>
+    </tr>
+  {% endfor %}
+</table>
+{% else %}
+<p class="muted">You haven't finished any quizzes yet. <a href="{% url 'home' %}">Pick a level</a> to start.</p>
+{% endif %}
+{% endblock %}

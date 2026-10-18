@@ -1,0 +1,38 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}LevelUp Quiz{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+  <header class="topbar">
+    <div class="wrap topbar-inner">
+      <a class="brand" href="{% url 'home' %}">LevelUp<span>Quiz</span></a>
+      <nav>
+        {% if user.is_authenticated %}
+          <a href="{% url 'history' %}">My results</a>
+          {% if user.is_staff %}<a href="{% url 'admin:index' %}">Admin</a>{% endif %}
+          <form method="post" action="{% url 'logout' %}" class="inline">
+            {% csrf_token %}<button class="linklike">Log out ({{ user.username }})</button>
+          </form>
+        {% else %}
+          <a href="{% url 'login' %}">Log in</a>
+          <a class="btn btn-small" href="{% url 'signup' %}">Sign up</a>
+        {% endif %}
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    {% for message in messages %}
+      <div class="flash flash-{{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="wrap footer">Built with Django · LevelUp Quiz</footer>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

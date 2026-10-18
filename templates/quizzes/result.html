@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Results · {{ attempt.quiz.title }}{% endblock %}
+{% block content %}
+<div class="panel score-panel">
+  <span class="pill">{{ attempt.quiz.level }}</span>
+  <h1>{{ attempt.quiz.title }}</h1>
+  <div class="score">{{ attempt.score }}<span>/{{ attempt.total }}</span></div>
+  <div class="bar"><div style="width: {{ attempt.percent }}%"></div></div>
+  <p class="muted">{{ attempt.percent }}%{% if attempt.timed_out %} · submitted after the time limit{% endif %}</p>
+  <div class="actions">
+    <form method="post" action="{% url 'start_quiz' attempt.quiz.slug %}">
+      {% csrf_token %}<button class="btn">Try again</button>
+    </form>
+    <a class="btn btn-ghost" href="{{ attempt.quiz.level.get_absolute_url }}">More {{ attempt.quiz.level }} quizzes</a>
+  </div>
+</div>
+
+<h2>Review</h2>
+{% for item in review %}
+  <div class="question review {% if item.is_correct %}is-right{% else %}is-wrong{% endif %}">
+    <p class="qtext"><span class="qnum">{{ forloop.counter }}.</span> {{ item.question.text }}</p>
+    <ul>
+      {% for choice in item.choices %}
+        <li class="{% if choice.is_correct %}correct{% elif choice == item.selected %}picked-wrong{% endif %}">
+          {{ choice.text }}
+          {% if choice == item.selected %}<em>(your answer)</em>{% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+    {% if not item.selected %}<p class="muted">No answer given.</p>{% endif %}
+    {% if item.question.explanation %}<p class="explain">{{ item.question.explanation }}</p>{% endif %}
+  </div>
+{% endfor %}
+{% endblock %}

@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero">
+  <h1>Pick your level</h1>
+  <p>Choose where you are in your learning journey and we'll show quizzes made for you.</p>
+</section>
+
+<div class="level-grid">
+  {% for level in levels %}
+    <a class="level-card" href="{{ level.get_absolute_url }}">
+      <span class="level-step">Level {{ forloop.counter }}</span>
+      <h2>{{ level.name }}</h2>
+      <p>{{ level.description }}</p>
+      <span class="pill">{{ level.quiz_count }} quiz{{ level.quiz_count|pluralize:"zes" }}</span>
+    </a>
+  {% empty %}
+    <p>No levels yet. Run <code>python manage.py seed_quizzes</code> to load sample data.</p>
+  {% endfor %}
+</div>
+{% endblock %}

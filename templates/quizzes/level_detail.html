@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}{{ level.name }} quizzes · LevelUp Quiz{% endblock %}
+{% block content %}
+<div class="level-switch">
+  {% for l in levels %}
+    <a href="{{ l.get_absolute_url }}" class="{% if l == level %}active{% endif %}">{{ l.name }}</a>
+  {% endfor %}
+</div>
+
+<h1>{{ level.name }}</h1>
+<p class="muted">{{ level.description }}</p>
+
+{% if categories %}
+<div class="filters">
+  <a href="?" class="chip {% if not selected_category %}active{% endif %}">All subjects</a>
+  {% for c in categories %}
+    <a href="?category={{ c.slug }}" class="chip {% if selected_category == c.slug %}active{% endif %}">{{ c.name }}</a>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div class="quiz-list">
+  {% for quiz in quizzes %}
+    <a class="quiz-card" href="{{ quiz.get_absolute_url }}">
+      <div>
+        <span class="pill">{{ quiz.category }}</span>
+        <h3>{{ quiz.title }}</h3>
+        <p>{{ quiz.description|truncatewords:25 }}</p>
+      </div>
+      <div class="quiz-meta">{{ quiz.question_count }} questions · {{ quiz.time_limit_minutes }} min</div>
+    </a>
+  {% empty %}
+    <p class="muted">No quizzes at this level yet — check back soon.</p>
+  {% endfor %}
+</div>
+{% endblock %}
