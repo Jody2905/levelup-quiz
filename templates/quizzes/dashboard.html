@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}My dashboard · LevelUp Quiz{% endblock %}
+{% block content %}
+<h1>My dashboard</h1>
+
+{% if stats.attempt_count %}
+<div class="stat-row">
+  <div class="stat"><span class="stat-value">{{ stats.attempt_count }}</span><span class="stat-label">Attempts</span></div>
+  <div class="stat"><span class="stat-value">{{ stats.quiz_count }}</span><span class="stat-label">Different quizzes</span></div>
+  <div class="stat"><span class="stat-value">{{ stats.average }}%</span><span class="stat-label">Average score</span></div>
+  <div class="stat"><span class="stat-value">{{ stats.best }}%</span><span class="stat-label">Best score</span></div>
+</div>
+
+{% if stats.suggestion %}
+<div class="panel tip">
+  <div>
+    <strong>Practice suggestion:</strong> {{ stats.weakest.name }} is your lowest subject ({{ stats.weakest.average }}% average).
+    Try <a href="{{ stats.suggestion.get_absolute_url }}">{{ stats.suggestion.title }}</a> ({{ stats.suggestion.level }}).
+  </div>
+</div>
+{% endif %}
+
+<div class="dash-grid">
+  <section class="panel">
+    <h2>Average by subject</h2>
+    <div class="bars">
+      {% for row in stats.by_subject %}
+        <div class="bar-row" title="{{ row.name }}: {{ row.average }}% average over {{ row.attempts }} attempt{{ row.attempts|pluralize }}">
+          <span class="bar-label">{{ row.name }}</span>
+          <span class="bar-track"><span class="bar-fill" style="width: {{ row.average }}%"></span></span>
+          <span class="bar-value">{{ row.average }}%</span>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Average by level</h2>
+    <div class="bars">
+      {% for row in stats.by_level %}
+        <div class="bar-row" title="{{ row.name }}: {{ row.average }}% average over {{ row.attempts }} attempt{{ row.attempts|pluralize }}">
+          <span class="bar-label">{{ row.name }}</span>
+          <span class="bar-track"><span class="bar-fill" style="width: {{ row.average }}%"></span></span>
+          <span class="bar-value">{{ row.average }}%</span>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+
+{% if chart %}
+<section class="panel">
+  <h2>Score over time <span class="muted small">(last {{ chart.points|length }} attempts)</span></h2>
+  <svg class="progress-chart" viewBox="0 0 {{ chart.width }} {{ chart.height }}" role="img"
+       aria-label="Line chart of your score percentage for each of your recent attempts">
+    {% for g in chart.gridlines %}
+      <line x1="{{ chart.left }}" x2="{{ chart.right }}" y1="{{ g.y }}" y2="{{ g.y }}" class="grid"></line>
+      <text x="{{ chart.label_x }}" y="{{ g.y }}" class="axis" text-anchor="end" dominant-baseline="middle">{{ g.label }}%</text>
+    {% endfor %}
+    {% if chart.points|length > 1 %}<polyline points="{{ chart.polyline }}" class="line"></polyline>{% endif %}
+    {% for p in chart.points %}
+      <g class="pt">
+        <circle cx="{{ p.x }}" cy="{{ p.y }}" r="12" class="hit"></circle>
+        <circle cx="{{ p.x }}" cy="{{ p.y }}" r="5" class="dot"></circle>
+        <title>{{ p.attempt.quiz.title }}: {{ p.attempt.score }}/{{ p.attempt.total }} ({{ p.attempt.percent }}%) on {{ p.attempt.submitted_at|date:"M j" }}</title>
+      </g>
+    {% endfor %}
+  </svg>
+  <p class="muted small">Hover a point for details. Full list on <a href="{% url 'history' %}">My results</a>.</p>
+</section>
+{% endif %}
+
+{% else %}
+<div class="panel empty">
+  <p>Your stats will show up here after you finish your first quiz.</p>
+  <a class="btn" href="{% url 'home' %}">Pick a level</a>
+</div>
+{% endif %}
+{% endblock %}

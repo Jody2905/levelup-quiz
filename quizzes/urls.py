@@ -10,5 +10,8 @@ urlpatterns = [
     path("attempt/<int:pk>/", views.take_attempt, name="take_attempt"),
     path("attempt/<int:pk>/result/", views.attempt_result, name="attempt_result"),
     path("history/", views.history, name="history"),
+    path("dashboard/", views.dashboard, name="dashboard"),
+    path("leaderboard/", views.leaderboard, name="leaderboard"),
+    path("leaderboard/<slug:slug>/", views.leaderboard, name="leaderboard_level"),
     path("signup/", views.signup, name="signup"),
 ]

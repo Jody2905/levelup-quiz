@@ -155,7 +155,51 @@ main { padding-top: 24px; padding-bottom: 40px; min-height: 70vh; }
 .table th { background: #f0eee8; }
 
 @media (max-width: 600px) {
+  .topbar-inner { height: auto; flex-direction: column; align-items: flex-start; padding-top: 10px; padding-bottom: 10px; gap: 6px; }
+  nav { gap: 6px 14px; }
+  .bar-row { grid-template-columns: 110px 1fr 40px; }
+  .progress-chart .axis { font-size: 16px; }
   .quiz-card { flex-direction: column; align-items: flex-start; }
   .table { font-size: .85rem; }
   h1 { font-size: 1.5rem; }
 }
+
+/* ---------- Phase 2: leaderboards & dashboard ---------- */
+.small { font-size: .85rem; }
+.empty { text-align: center; }
+.leaderboard tr.me td { background: #eef6f2; font-weight: 600; }
+.rank {
+  display: inline-grid; place-items: center; width: 28px; height: 28px;
+  border-radius: 50%; background: var(--line); font-weight: 700; font-size: .85rem;
+}
+.rank-1 { background: #f2c94c; }
+.rank-2 { background: #d5d9df; }
+.rank-3 { background: #e3b38a; }
+
+.stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.stat {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 14px 16px; display: flex; flex-direction: column;
+}
+.stat-value { font-size: 1.8rem; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; }
+.stat-label { color: var(--muted); font-size: .85rem; }
+
+.tip { background: #fbf6e8; border-color: #f0e2b8; margin-bottom: 16px; padding: 14px 18px; }
+
+.dash-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin-bottom: 16px; }
+.dash-grid h2, .panel h2 { margin-top: 0; font-size: 1.1rem; }
+.bars { display: grid; gap: 10px; }
+.bar-row { display: grid; grid-template-columns: 150px 1fr 44px; align-items: center; gap: 10px; }
+.bar-label { font-size: .9rem; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bar-track { height: 12px; background: #eceae4; border-radius: 4px; overflow: hidden; }
+.bar-fill { display: block; height: 100%; background: var(--brand); border-radius: 0 4px 4px 0; }
+.bar-row:hover .bar-fill { filter: brightness(1.15); }
+.bar-value { text-align: right; font-size: .9rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.progress-chart { width: 100%; height: auto; display: block; }
+.progress-chart .grid { stroke: var(--line); stroke-width: 1; }
+.progress-chart .axis { fill: var(--muted); font-size: 11px; }
+.progress-chart .line { fill: none; stroke: var(--brand); stroke-width: 2; stroke-linejoin: round; }
+.progress-chart .dot { fill: var(--brand); stroke: var(--surface); stroke-width: 2; }
+.progress-chart .hit { fill: transparent; }
+.progress-chart .pt:hover .dot { r: 7; }

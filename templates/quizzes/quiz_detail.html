@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load quiz_extras %}
 {% block title %}{{ quiz.title }} · LevelUp Quiz{% endblock %}
 {% block content %}
 <a class="back" href="{{ quiz.level.get_absolute_url }}">← {{ quiz.level }} quizzes</a>
@@ -21,6 +22,22 @@
     <a class="btn" href="{% url 'login' %}?next={{ request.path }}">Log in to take this quiz</a>
   {% endif %}
 </div>
+
+{% if leaders %}
+<h2>Top scores</h2>
+<table class="table leaderboard">
+  <tr><th>Rank</th><th>Player</th><th>Score</th><th>Time</th></tr>
+  {% for row in leaders %}
+    <tr class="{% if row.user == user %}me{% endif %}">
+      <td><span class="rank rank-{{ row.rank }}">{{ row.rank }}</span></td>
+      <td>{{ row.user.username }}{% if row.user == user %} <em>(you)</em>{% endif %}</td>
+      <td>{{ row.score }}/{{ row.total }} ({{ row.percent }}%)</td>
+      <td>{{ row.seconds|duration }}</td>
+    </tr>
+  {% endfor %}
+</table>
+<p class="muted small"><a href="{% url 'leaderboard_level' quiz.level.slug %}">Full {{ quiz.level }} leaderboard →</a></p>
+{% endif %}
 
 {% if past_attempts %}
 <h2>Your recent attempts</h2>

@@ -10,6 +10,8 @@ from django.utils.text import slugify
 
 from quizzes.models import Category, Choice, Level, Question, Quiz
 
+from ._school_quizzes import SCHOOL_QUIZZES
+
 LEVELS = [
     ("Elementary School", "Grades 1-6: building the basics."),
     ("Middle School", "Grades 7-9: stepping it up."),
@@ -171,7 +173,8 @@ class Command(BaseCommand):
             )
             levels[name] = level
 
-        for data in QUIZZES:
+        all_quizzes = QUIZZES + SCHOOL_QUIZZES
+        for data in all_quizzes:
             category, _ = Category.objects.get_or_create(
                 slug=slugify(data["category"]), defaults={"name": data["category"]}
             )
@@ -195,5 +198,5 @@ class Command(BaseCommand):
                 )
 
         self.stdout.write(
-            self.style.SUCCESS(f"Loaded {len(LEVELS)} levels and {len(QUIZZES)} quizzes.")
+            self.style.SUCCESS(f"Loaded {len(LEVELS)} levels and {len(all_quizzes)} quizzes.")
         )

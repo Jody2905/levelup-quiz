@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% load quiz_extras %}
+{% block title %}{{ level.name }} leaderboard · LevelUp Quiz{% endblock %}
+{% block content %}
+<h1>Leaderboard</h1>
+<p class="muted">Points from each player's best attempt on every {{ level.name }} quiz. Ties go to the faster player.</p>
+
+<div class="level-switch">
+  {% for l in levels %}
+    <a href="{% url 'leaderboard_level' l.slug %}" class="{% if l == level %}active{% endif %}">{{ l.name }}</a>
+  {% endfor %}
+</div>
+
+{% if rows %}
+<table class="table leaderboard">
+  <tr><th>Rank</th><th>Player</th><th>Points</th><th>Accuracy</th><th>Quizzes</th><th>Total time</th></tr>
+  {% for row in rows %}
+    <tr class="{% if row.user == user %}me{% endif %}">
+      <td><span class="rank rank-{{ row.rank }}">{{ row.rank }}</span></td>
+      <td>{{ row.user.username }}{% if row.user == user %} <em>(you)</em>{% endif %}</td>
+      <td><strong>{{ row.points }}</strong><span class="muted">/{{ row.possible }}</span></td>
+      <td>{{ row.percent }}%</td>
+      <td>{{ row.quizzes }}</td>
+      <td>{{ row.seconds|duration }}</td>
+    </tr>
+  {% endfor %}
+</table>
+{% else %}
+<div class="panel empty">
+  <p>No one has finished a {{ level.name }} quiz yet.</p>
+  <a class="btn" href="{{ level.get_absolute_url }}">Be the first</a>
+</div>
+{% endif %}
+{% endblock %}

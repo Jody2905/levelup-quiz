@@ -62,6 +62,7 @@ def quiz_detail(request, slug):
             "quiz": quiz,
             "question_count": quiz.questions.count(),
             "past_attempts": past_attempts,
+            "leaders": services.quiz_leaderboard(quiz, limit=5),
         },
     )
 
@@ -154,3 +155,29 @@ def signup(request):
         messages.success(request, "Welcome! Pick a level to get started.")
         return redirect("home")
     return render(request, "registration/signup.html", {"form": form})
+
+
+def leaderboard(request, slug=None):
+    """Level leaderboard: users ranked by total points across that level's quizzes."""
+    levels = Level.objects.all()
+    if slug is None:
+        first = levels.first()
+        if first is None:
+            return redirect("home")
+        return redirect("leaderboard_level", slug=first.slug)
+    level = get_object_or_404(Level, slug=slug)
+    return render(
+        request,
+        "quizzes/leaderboard.html",
+        {"level": level, "levels": levels, "rows": services.level_leaderboard(level)},
+    )
+
+
+@login_required
+def dashboard(request):
+    stats = services.user_stats(request.user)
+    return render(
+        request,
+        "quizzes/dashboard.html",
+        {"stats": stats, "chart": services.progress_chart(stats["recent"])},
+    )
